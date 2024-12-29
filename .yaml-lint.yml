@@ -1,5 +1,5 @@
 extends: default
 
 ignore:
-  - helm/
-  - .github/
+  - /github/workspace/helm/
+  - /github/workspace/.github/
