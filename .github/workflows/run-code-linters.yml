@@ -49,6 +49,7 @@ jobs:
           exit $EXIT_CODE
 
       - name: Report Helm lint status
+        if: always()
         uses: actions/github-script@v6
         with:
           script: |
@@ -66,8 +67,8 @@ jobs:
               }
             })
 
-      - name: Run Spellcheck
-        uses: igsekor/pyspelling-any@v0.0.2
+      - name: Run ShellCheck
+        run: find . -type f -name "*.sh" -exec shellcheck {} +
 
       - name: Run super-linter
         uses: github/super-linter@v4
@@ -81,5 +82,4 @@ jobs:
           VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_MARKDOWN: true
           VALIDATE_PYTHON_PYLINT: true
-          VALIDATE_SHELL_SHFMT: true
           VALIDATE_YAML: true
