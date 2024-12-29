@@ -1,0 +1,127 @@
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: tcp-services
+#  namespace: ingress-nginx
+#data:
+#  # Format is "external_port: namespace/service_name:service_port"
+#  "6817": "{{ .Release.Namespace }}/{{ include "slurm-cluster.fullname" . }}-slurmctld:6817"
+#---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-mariadb-config
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mariadb
+data:
+  custom.cnf: |
+    [mysqld]
+    innodb_buffer_pool_size=4G
+    innodb_lock_wait_timeout=900
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-slurmdbd-config
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: slurmdbd
+data:
+  slurmdbd.conf: |
+    ArchiveEvents=yes
+    ArchiveJobs=yes
+    ArchiveResvs=yes
+    ArchiveSteps=no
+    ArchiveSuspend=no
+    ArchiveTXN=no
+    ArchiveUsage=no
+    #ArchiveScript=/usr/sbin/slurm.dbd.archive
+    AuthInfo=socket=/app/slurm/munge/run/munge.socket.2
+    AuthType=auth/munge
+    DbdHost=localhost
+    DebugLevel=info
+    PurgeEventAfter=1month
+    PurgeJobAfter=3month
+    PurgeResvAfter=1month
+    PurgeStepAfter=1month
+    PurgeSuspendAfter=1month
+    PurgeTXNAfter=3month
+    PurgeUsageAfter=6month
+    LogFile=/app/slurm/log/slurmdbd.log
+    PidFile=/app/slurm/run/slurmdbd.pid
+  {{- $slurmdbdrunAsUser := .Values.defaults.securityContext.runAsUser }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmdbd") (hasKey .Values.pods.slurmdbd "securityContext") (hasKey .Values.pods.slurmdbd.securityContext "runAsUser") }}  {{- $slurmdbdrunAsUser = .Values.pods.slurmdbd.securityContext.runAsUser }}
+  {{- end }}
+    SlurmUser={{ $slurmdbdrunAsUser }}
+    StorageHost={{ include "slurm-cluster.fullname" . }}-mariadb-0
+    StoragePass=STORAGE_PASS
+    StorageType=accounting_storage/mysql
+    StorageUser=STORAGE_USER
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-slurm-config
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: slurmctld
+data:
+  slurm.conf: |
+    AuthInfo=socket=/app/slurm/munge/run/munge.socket.2
+    AuthType=auth/munge
+    ClusterName={{ include "slurm-cluster.fullname" . }}
+    SlurmctldHost={{ include "slurm-cluster.fullname" . }}-slurmctld-0
+    #SlurmctldAddr={{ include "slurm-cluster.fullname" . }}-slurmctld-0.slurm-cluster.svc.cluster.local
+    MpiDefault=none
+    #ProctrackType=proctrack/cgroup
+    ProctrackType=proctrack/linuxproc
+    ReturnToService=2
+    SlurmctldPidFile=/app/slurm/run/slurmctld.pid
+    SlurmctldPort=6817
+    SlurmdPidFile=/app/slurm/run/slurmd.pid
+    SlurmdPort=6818
+    SlurmdSpoolDir=/app/slurm/spool/slurmd
+  {{- $slurmctldrunAsUser := .Values.defaults.securityContext.runAsUser }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmctld") (hasKey .Values.pods.slurmctld "securityContext") (hasKey .Values.pods.slurmctld.securityContext "runAsUser") }}
+  {{- $slurmctldrunAsUser = .Values.pods.slurmctd.securityContext.runAsUser }}
+  {{- end }}
+    SlurmUser={{ $slurmctldrunAsUser }}
+  {{- $slurmdrunAsUser := .Values.defaults.securityContext.runAsUser }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmd") (hasKey .Values.pods.slurmd "securityContext") (hasKey .Values.pods.slurmd.securityContext "runAsUser") }}
+  {{- $slurmdrunAsUser = .Values.pods.slurmd.securityContext.runAsUser }}
+  {{- end }}
+    SlurmdUser={{ $slurmdrunAsUser }}
+    StateSaveLocation=/var/spool/slurmctld
+    SwitchType=switch/none
+    SlurmctldParameters=cloud_dns,enable_configless,write_config_on_change
+
+    # TIMERS
+    InactiveLimit=0
+    KillWait=30
+    MinJobAge=300
+    SlurmctldTimeout=120
+    SlurmdTimeout=300
+    Waittime=0
+    
+    # SCHEDULING
+    SchedulerType=sched/backfill
+    SelectType=select/cons_tres
+    SelectTypeParameters=CR_Core_Memory
+    
+    # LOGGING AND ACCOUNTING
+    AccountingStorageHost={{ include "slurm-cluster.fullname" . }}-slurmdbd-0
+    AccountingStorageType=accounting_storage/slurmdbd
+    AccountingStoragePass=socket=/app/slurm/munge/run/munge.socket.2
+    JobCompType=jobcomp/none
+    JobAcctGatherFrequency=30
+    #JobAcctGatherType=jobacct_gather/cgroup
+    JobAcctGatherType=jobacct_gather/linux
+    SlurmctldDebug=info
+    SlurmctldLogFile=/app/slurm/log/slurmctld.log
+    SlurmdDebug=info
+    SlurmdLogFile=/app/slurm/log/slurmd.log
+    
+    # COMPUTE NODES
+    MaxNodeCount=1000
+    PartitionName=main Nodes=ALL Default=YES MaxTime=INFINITE State=UP

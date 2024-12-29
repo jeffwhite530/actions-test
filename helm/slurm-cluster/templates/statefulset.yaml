@@ -1,0 +1,670 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-mariadb
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mariadb
+spec:
+  serviceName: {{ include "slurm-cluster.fullname" . }}-mariadb
+  {{- $replicas := .Values.defaults.replicas }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "mariadb") (hasKey .Values.pods.mariadb "replicas") }}
+  {{- $replicas = .Values.pods.mariadb.replicas }}
+  {{- end }}
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "slurm-cluster.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mariadb
+  template:
+    metadata:
+      labels:
+        {{- include "slurm-cluster.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mariadb
+    spec:
+      imagePullSecrets:
+        {{- $imagePullSecrets := deepCopy .Values.defaults.imagePullSecrets }}
+        {{- if hasKey .Values.pods.mariadb "imagePullSecrets" }}
+        {{- $imagePullSecrets = merge $imagePullSecrets .Values.pods.mariadb.imagePullSecrets }}
+        {{- end }}
+        {{- with $imagePullSecrets }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      subdomain: {{ include "slurm-cluster.fullname" . }}-mariadb
+      securityContext:
+        {{- $securityContext := deepCopy .Values.defaults.securityContext }}
+        {{- if hasKey .Values.pods.mariadb "securityContext" }}
+        {{- $securityContext = merge $securityContext .Values.pods.mariadb.securityContext }}
+        {{- end }}
+        {{- toYaml $securityContext | nindent 8 }}
+      containers:
+        - name: mariadb
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "mariadb") (hasKey .Values.pods.mariadb "image") }}
+          {{- $image = .Values.pods.mariadb.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.mariadb "resources" }}
+            {{- $resources = merge $resources .Values.pods.mariadb.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: password
+            - name: MARIADB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: username
+            - name: MARIADB_DATABASE
+              value: {{ .Values.pods.mariadb.databaseName }}
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            {{- if .Values.volumes.mariadb }}
+            {{- range .Values.volumes.mariadb }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- end }}
+            - name: mariadb-config
+              mountPath: /etc/mysql/conf.d
+          livenessProbe:
+            tcpSocket:
+              port: 3306
+            {{- $livenessProbe := deepCopy .Values.defaults.probes.liveness }}
+            {{- if hasKey .Values.pods.mariadb "probes" }}
+            {{- if hasKey .Values.pods.mariadb.probes "liveness" }}
+            {{- $livenessProbe = merge $livenessProbe .Values.pods.mariadb.probes.liveness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $livenessProbe | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            {{- $readinessProbe := deepCopy .Values.defaults.probes.readiness }}
+            {{- if hasKey .Values.pods.mariadb "probes" }}
+            {{- if hasKey .Values.pods.mariadb.probes "readiness" }}
+            {{- $readinessProbe = merge $readinessProbe .Values.pods.mariadb.probes.readiness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $readinessProbe | nindent 12 }}
+      volumes:
+        - name: mariadb-config
+          configMap:
+            name: {{ include "slurm-cluster.fullname" . }}-mariadb-config
+      nodeSelector:
+        {{- $nodeSelector := deepCopy .Values.defaults.nodeSelector }}
+        {{- if hasKey .Values.pods.mariadb "nodeSelector" }}
+        {{- $nodeSelector = merge $nodeSelector .Values.pods.mariadb.nodeSelector }}
+        {{- end }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      affinity:
+        {{- $affinity := deepCopy .Values.defaults.affinity }}
+        {{- if hasKey .Values.pods.mariadb "affinity" }}
+        {{- $affinity = merge $affinity .Values.pods.mariadb.affinity }}
+        {{- end }}
+        {{- toYaml $affinity | nindent 8 }}
+      tolerations:
+        {{- $tolerations := deepCopy .Values.defaults.tolerations }}
+        {{- if hasKey .Values.pods.mariadb "tolerations" }}
+        {{- $tolerations = merge $tolerations .Values.pods.mariadb.tolerations }}
+        {{- end }}
+        {{- toYaml $tolerations | nindent 8 }}
+  volumeClaimTemplates:
+    {{- if .Values.volumes.mariadb }}
+    {{- range .Values.volumes.mariadb }}
+    - metadata:
+        name: {{ .name }}
+        labels:
+          app.kubernetes.io/component: mariadb
+      spec:
+        accessModes: {{ .accessModes | toJson }}
+        {{- if and .volumeName (not .storageClass) }}
+        volumeName: {{ .volumeName }}
+        {{- else if and .storageClass (not .volumeName) }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClass }}
+        {{- else }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .size }}
+    {{- end }}
+    {{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-slurmdbd
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: slurmdbd
+spec:
+  serviceName: {{ include "slurm-cluster.fullname" . }}-slurmdbd
+  {{- $replicas := .Values.defaults.replicas }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmdbd") (hasKey .Values.pods.slurmdbd "replicas") }}
+  {{- $replicas = .Values.pods.slurmdbd.replicas }}
+  {{- end }}
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "slurm-cluster.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: slurmdbd
+  template:
+    metadata:
+      labels:
+        {{- include "slurm-cluster.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: slurmdbd
+    spec:
+      imagePullSecrets:
+        {{- $imagePullSecrets := deepCopy .Values.defaults.imagePullSecrets }}
+        {{- if hasKey .Values.pods.slurmdbd "imagePullSecrets" }}
+        {{- $imagePullSecrets = merge $imagePullSecrets .Values.pods.slurmdbd.imagePullSecrets }}
+        {{- end }}
+        {{- with $imagePullSecrets }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      securityContext:
+        {{- $securityContext := deepCopy .Values.defaults.securityContext }}
+        {{- if hasKey .Values.pods.slurmdbd "securityContext" }}
+        {{- $securityContext = merge $securityContext .Values.pods.slurmdbd.securityContext }}
+        {{- end }}
+        {{- toYaml $securityContext | nindent 8 }}
+      initContainers:
+        - name: copy-slurmdbd-conf
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmdbd") (hasKey .Values.pods.slurmdbd "image") }}
+          {{- $image = .Values.pods.slurmdbd.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.slurmdbd "resources" }}
+            {{- $resources = merge $resources .Values.pods.slurmdbd.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              mkdir -p /etc/slurm && \
+              cp /slurmdbdconf-configmap/slurmdbd.conf /etc/slurm/slurmdbd.conf && \
+              sed -i "s/STORAGE_PASS/${STORAGE_PASS}/g" /etc/slurm/slurmdbd.conf && \
+              sed -i "s/STORAGE_USER/${STORAGE_USER}/g" /etc/slurm/slurmdbd.conf      
+          volumeMounts:
+            - name: slurmdbdconf-configmap-volume
+              mountPath: /slurmdbdconf-configmap
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+          env:
+            - name: STORAGE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: username
+            - name: STORAGE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: password
+      containers:
+        - name: slurmdbd
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmdbd") (hasKey .Values.pods.slurmdbd "image") }}
+          {{- $image = .Values.pods.slurmdbd.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.slurmdbd "resources" }}
+            {{- $resources = merge $resources .Values.pods.slurmdbd.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - /usr/local/bin/entrypoint.sh 
+            - launch_slurmdbd
+          volumeMounts:
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+            {{- range $component, $config := (dict "munge" .Values.volumes.munge "slurmdbd" .Values.volumes.slurmdbd) }}
+            {{- if $config }}
+            {{- range $config }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - containerPort: 6819
+          livenessProbe:
+            tcpSocket:
+              port: 6819
+            {{- $livenessProbe := deepCopy .Values.defaults.probes.liveness }}
+            {{- if hasKey .Values.pods.slurmdbd "probes" }}
+            {{- if hasKey .Values.pods.slurmdbd.probes "liveness" }}
+            {{- $livenessProbe = merge $livenessProbe .Values.pods.slurmdbd.probes.liveness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $livenessProbe | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: 6819
+            {{- $readinessProbe := deepCopy .Values.defaults.probes.readiness }}
+            {{- if hasKey .Values.pods.slurmdbd "probes" }}
+            {{- if hasKey .Values.pods.slurmdbd.probes "readiness" }}
+            {{- $readinessProbe = merge $readinessProbe .Values.pods.slurmdbd.probes.readiness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $readinessProbe | nindent 12 }}
+      volumes:
+        - name: slurmdbdconf-configmap-volume
+          configMap:
+            name: {{ include "slurm-cluster.fullname" . }}-slurmdbd-config
+        - name: etc-slurm-dir
+          emptyDir: {}
+        {{- range .Values.volumes.munge }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pvc
+        {{- end }}
+      nodeSelector:
+        {{- $nodeSelector := deepCopy .Values.defaults.nodeSelector }}
+        {{- if hasKey .Values.pods.slurmdbd "nodeSelector" }}
+        {{- $nodeSelector = merge $nodeSelector .Values.pods.slurmdbd.nodeSelector }}
+        {{- end }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      affinity:
+        {{- $affinity := deepCopy .Values.defaults.affinity }}
+        {{- if hasKey .Values.pods.slurmdbd "affinity" }}
+        {{- $affinity = merge $affinity .Values.pods.slurmdbd.affinity }}
+        {{- end }}
+        {{- toYaml $affinity | nindent 8 }}
+      tolerations:
+        {{- $tolerations := deepCopy .Values.defaults.tolerations }}
+        {{- if hasKey .Values.pods.slurmdbd "tolerations" }}
+        {{- $tolerations = merge $tolerations .Values.pods.slurmdbd.tolerations }}
+        {{- end }}
+        {{- toYaml $tolerations | nindent 8 }}
+  volumeClaimTemplates:
+    {{- if .Values.volumes.slurmdbd }}
+    {{- range .Values.volumes.slurmdbd }}
+    - metadata:
+        name: {{ .name }}
+        labels:
+          app.kubernetes.io/component: slurmdbd
+      spec:
+        accessModes: {{ .accessModes | toJson }}
+        {{- if and .volumeName (not .storageClass) }}
+        volumeName: {{ .volumeName }}
+        {{- else if and .storageClass (not .volumeName) }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClass }}
+        {{- else }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .size }}
+    {{- end }}
+    {{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-slurmctld
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: slurmctld
+spec:
+  serviceName: {{ include "slurm-cluster.fullname" . }}-slurmctld
+  {{- $replicas := .Values.defaults.replicas }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmctld") (hasKey .Values.pods.slurmctld "replicas") }}
+  {{- $replicas = .Values.pods.slurmctld.replicas }}
+  {{- end }}
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "slurm-cluster.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: slurmctld
+  template:
+    metadata:
+      labels:
+        {{- include "slurm-cluster.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: slurmctld
+    spec:
+      imagePullSecrets:
+        {{- $imagePullSecrets := deepCopy .Values.defaults.imagePullSecrets }}
+        {{- if hasKey .Values.pods.slurmctld "imagePullSecrets" }}
+        {{- $imagePullSecrets = merge $imagePullSecrets .Values.pods.slurmctld.imagePullSecrets }}
+        {{- end }}
+        {{- with $imagePullSecrets }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      securityContext:
+        {{- $securityContext := deepCopy .Values.defaults.securityContext }}
+        {{- if hasKey .Values.pods.slurmctld "securityContext" }}
+        {{- $securityContext = merge $securityContext .Values.pods.slurmctld.securityContext }}
+        {{- end }}
+        {{- toYaml $securityContext | nindent 8 }}
+      initContainers:
+        - name: copy-slurmdbd-conf
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmctld") (hasKey .Values.pods.slurmctld "image") }}
+          {{- $image = .Values.pods.slurmctld.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.slurmctld "resources" }}
+            {{- $resources = merge $resources .Values.pods.slurmctld.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              mkdir -p /etc/slurm && \
+              cp /slurmdbdconf-configmap/slurmdbd.conf /etc/slurm/slurmdbd.conf && \
+              sed -i "s/STORAGE_PASS/${STORAGE_PASS}/g" /etc/slurm/slurmdbd.conf && \
+              sed -i "s/STORAGE_USER/${STORAGE_USER}/g" /etc/slurm/slurmdbd.conf      
+          volumeMounts:
+            - name: slurmdbdconf-configmap-volume
+              mountPath: /slurmdbdconf-configmap
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+          env:
+            - name: STORAGE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: username
+            - name: STORAGE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "slurm-cluster.fullname" . }}-mariadb-root
+                  key: password
+        - name: copy-slurm-conf
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmctld") (hasKey .Values.pods.slurmctld "image") }}
+          {{- $image = .Values.pods.slurmctld.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.slurmctld "resources" }}
+            {{- $resources = merge $resources .Values.pods.slurmctld.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              cp /slurmconf-configmap/slurm.conf /etc/slurm/slurm.conf
+          volumeMounts:
+            - name: slurmconf-configmap-volume
+              mountPath: /slurmconf-configmap
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+      containers:
+        - name: slurmctld
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "slurmctld") (hasKey .Values.pods.slurmctld "image") }}
+          {{- $image = .Values.pods.slurmctld.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.slurmctld "resources" }}
+            {{- $resources = merge $resources .Values.pods.slurmctld.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - /usr/local/bin/entrypoint.sh
+            - launch_slurmctld
+          volumeMounts:
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+            {{- range $component, $config := (dict "munge" .Values.volumes.munge "slurmctld" .Values.volumes.slurmctld) }}
+            {{- if $config }}
+            {{- range $config }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: 6817
+            {{- $livenessProbe := deepCopy .Values.defaults.probes.liveness }}
+            {{- if hasKey .Values.pods.slurmctld "probes" }}
+            {{- if hasKey .Values.pods.slurmctld.probes "liveness" }}
+            {{- $livenessProbe = merge $livenessProbe .Values.pods.slurmctld.probes.liveness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $livenessProbe | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: 6817
+            {{- $readinessProbe := deepCopy .Values.defaults.probes.readiness }}
+            {{- if hasKey .Values.pods.slurmctld "probes" }}
+            {{- if hasKey .Values.pods.slurmctld.probes "readiness" }}
+            {{- $readinessProbe = merge $readinessProbe .Values.pods.slurmctld.probes.readiness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $readinessProbe | nindent 12 }}
+      volumes:
+        - name: slurmdbdconf-configmap-volume
+          configMap:
+            name: {{ include "slurm-cluster.fullname" . }}-slurmdbd-config
+        - name: slurmconf-configmap-volume
+          configMap:
+            name: {{ include "slurm-cluster.fullname" . }}-slurm-config
+        - name: etc-slurm-dir
+          emptyDir: {}
+        {{- range .Values.volumes.munge }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pvc
+        {{- end }}
+      nodeSelector:
+        {{- $nodeSelector := deepCopy .Values.defaults.nodeSelector }}
+        {{- if hasKey .Values.pods.slurmctld "nodeSelector" }}
+        {{- $nodeSelector = merge $nodeSelector .Values.pods.slurmctld.nodeSelector }}
+        {{- end }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      affinity:
+        {{- $affinity := deepCopy .Values.defaults.affinity }}
+        {{- if hasKey .Values.pods.slurmctld "affinity" }}
+        {{- $affinity = merge $affinity .Values.pods.slurmctld.affinity }}
+        {{- end }}
+        {{- toYaml $affinity | nindent 8 }}
+      tolerations:
+        {{- $tolerations := deepCopy .Values.defaults.tolerations }}
+        {{- if hasKey .Values.pods.slurmctld "tolerations" }}
+        {{- $tolerations = merge $tolerations .Values.pods.slurmctld.tolerations }}
+        {{- end }}
+        {{- toYaml $tolerations | nindent 8 }}
+  volumeClaimTemplates:
+    {{- if .Values.volumes.slurmctld }}
+    {{- range .Values.volumes.slurmctld }}
+    - metadata:
+        name: {{ .name }}
+        labels:
+          app.kubernetes.io/component: slurmctld
+      spec:
+        accessModes: {{ .accessModes | toJson }}
+        {{- if and .volumeName (not .storageClass) }}
+        volumeName: {{ .volumeName }}
+        {{- else if and .storageClass (not .volumeName) }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClass }}
+        {{- else }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .size }}
+    {{- end }}
+    {{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "slurm-cluster.fullname" . }}-node-watcher
+  labels:
+    {{- include "slurm-cluster.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-watcher
+spec:
+  serviceName: {{ include "slurm-cluster.fullname" . }}-node-watcher
+  {{- $replicas := .Values.defaults.replicas }}
+  {{- if and (hasKey .Values "pods") (hasKey .Values.pods "nodeWatcher") (hasKey .Values.pods.nodeWatcher "replicas") }}
+  {{- $replicas = .Values.pods.nodeWatcher.replicas }}
+  {{- end }}
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "slurm-cluster.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: node-watcher
+  template:
+    metadata:
+      labels:
+        {{- include "slurm-cluster.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: node-watcher
+    spec:
+      imagePullSecrets:
+        {{- $imagePullSecrets := deepCopy .Values.defaults.imagePullSecrets }}
+        {{- if hasKey .Values.pods.nodeWatcher "imagePullSecrets" }}
+        {{- $imagePullSecrets = merge $imagePullSecrets .Values.pods.nodeWatcher.imagePullSecrets }}
+        {{- end }}
+        {{- with $imagePullSecrets }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      securityContext:
+        {{- $securityContext := deepCopy .Values.defaults.securityContext }}
+        {{- if hasKey .Values.pods.nodeWatcher "securityContext" }}
+        {{- $securityContext = merge $securityContext .Values.pods.nodeWatcher.securityContext }}
+        {{- end }}
+        {{- toYaml $securityContext | nindent 8 }}
+      serviceAccountName: {{ include "slurm-cluster.fullname" . }}-node-watcher
+      containers:
+        - name: node-watcher
+          {{- $image := .Values.defaults.image }}
+          {{- if and (hasKey .Values "pods") (hasKey .Values.pods "nodeWatcher") (hasKey .Values.pods.nodeWatcher "image") }}
+          {{- $image = .Values.pods.nodeWatcher.image }}
+          {{- end }}
+          image: {{ $image }}
+          imagePullPolicy: Always
+          resources:
+            {{- $resources := deepCopy .Values.defaults.resources }}
+            {{- if hasKey .Values.pods.nodeWatcher "resources" }}
+            {{- $resources = merge $resources .Values.pods.nodeWatcher.resources }}
+            {{- end }}
+            {{- toYaml $resources | nindent 12 }}
+          command: ["/bin/bash"]
+          args:
+            - /usr/local/bin/entrypoint.sh
+            - launch_slurm-node-watcher
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            {{- range $component, $config := (dict "munge" .Values.volumes.munge "nodeWatcher" .Values.volumes.nodeWatcher) }}
+            {{- if $config }}
+            {{- range $config }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            - name: etc-slurm-dir
+              mountPath: /etc/slurm
+          livenessProbe:
+            exec:
+              command: ["pgrep", "-f", "slurm-node-watcher.py"]
+            {{- $livenessProbe := deepCopy .Values.defaults.probes.liveness }}
+            {{- if hasKey .Values.pods.nodeWatcher "probes" }}
+            {{- if hasKey .Values.pods.nodeWatcher.probes "liveness" }}
+            {{- $livenessProbe = merge $livenessProbe .Values.pods.nodeWatcher.probes.liveness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $livenessProbe | nindent 12 }}
+          readinessProbe:
+            exec:
+              command: ["pgrep", "-f", "slurm-node-watcher.py"]
+            {{- $readinessProbe := deepCopy .Values.defaults.probes.readiness }}
+            {{- if hasKey .Values.pods.nodeWatcher "probes" }}
+            {{- if hasKey .Values.pods.nodeWatcher.probes "readiness" }}
+            {{- $readinessProbe = merge $readinessProbe .Values.pods.nodeWatcher.probes.readiness }}
+            {{- end }}
+            {{- end }}
+            {{- toYaml $readinessProbe | nindent 12 }}
+      volumes:
+        - name: etc-slurm-dir
+          configMap:
+            name: {{ include "slurm-cluster.fullname" . }}-slurm-config
+        {{- range .Values.volumes.munge }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pvc
+        {{- end }}
+      nodeSelector:
+        {{- $nodeSelector := deepCopy .Values.defaults.nodeSelector }}
+        {{- if hasKey .Values.pods.nodeWatcher "nodeSelector" }}
+        {{- $nodeSelector = merge $nodeSelector .Values.pods.nodeWatcher.nodeSelector }}
+        {{- end }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      affinity:
+        {{- $affinity := deepCopy .Values.defaults.affinity }}
+        {{- if hasKey .Values.pods.nodeWatcher "affinity" }}
+        {{- $affinity = merge $affinity .Values.pods.nodeWatcher.affinity }}
+        {{- end }}
+        {{- toYaml $affinity | nindent 8 }}
+      tolerations:
+        {{- $tolerations := deepCopy .Values.defaults.tolerations }}
+        {{- if hasKey .Values.pods.nodeWatcher "tolerations" }}
+        {{- $tolerations = merge $tolerations .Values.pods.nodeWatcher.tolerations }}
+        {{- end }}
+        {{- toYaml $tolerations | nindent 8 }}
+  volumeClaimTemplates:
+    {{- if .Values.volumes.nodeWatcher }}
+    {{- range .Values.volumes.nodeWatcher }}
+    - metadata:
+        name: {{ .name }}
+        labels:
+          app.kubernetes.io/component: node-watcher
+      spec:
+        accessModes: {{ .accessModes | toJson }}
+        {{- if and .volumeName (not .storageClass) }}
+        volumeName: {{ .volumeName }}
+        {{- else if and .storageClass (not .volumeName) }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClass }}
+        {{- else }}
+        volumeName: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+        storageClassName: {{ .storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .size }}
+    {{- end }}
+    {{- end }}
