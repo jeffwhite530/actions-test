@@ -1,0 +1,73 @@
+---
+# Missing metadata like author, description
+- hosts: webservers
+  sudo: yes  # Deprecated privilege escalation
+  vars:
+    app_path: /var/www/app
+    PORT: 80  # Bad variable naming (should be lowercase)
+
+  tasks:
+    # Using command instead of copy module
+    - name: copy files
+      command: cp /tmp/app.conf /etc/nginx/sites-enabled/
+
+    # Using command instead of service module
+    - command: service nginx restart
+      
+    # Missing name
+    - apt: name=nginx state=latest
+
+    # Using bare variables without quotes
+    - name: Create directory
+      file:
+        path: {{ app_path }}
+        state: directory
+        mode: 0755
+
+    # Using deprecated 'include'
+    - include: common_tasks.yml
+
+    # Bad git usage - using command instead of git module
+    - name: Clone repository
+      command: git clone https://github.com/user/repo.git
+
+    # Bad package management - using shell
+    - name: Install packages
+      shell: apt-get install -y python-pip
+
+    # Bad template usage without backup
+    - name: Configure application
+      template:
+        src: app.conf.j2
+        dest: /etc/app/config.conf
+        mode: 644  # Mode should be quoted
+
+    # No handler for service restart
+    - name: Copy nginx configuration
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+
+    # Using curl in shell instead of uri module
+    - name: Check website
+      shell: curl -s http://localhost:80
+
+    # Unsafe file permissions
+    - name: Create log directory
+      file:
+        path: /var/log/app
+        state: directory
+        mode: 777
+
+    # Bad when condition syntax
+    - name: Conditional task
+      debug:
+        msg: "System is Linux"
+      when: ansible_os_family == "Linux"
+
+    # Missing become for privileged operation
+    - name: Write to system file
+      copy:
+        content: "some content"
+        dest: /etc/systemfile
+

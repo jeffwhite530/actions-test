@@ -1,0 +1,23 @@
+{{- range $component, $config := (dict "mariadb" .Values.volumes.mariadb "munge" .Values.volumes.munge "slurmdbd" .Values.volumes.slurmdbd "slurmctld" .Values.volumes.slurmctld "slurmd" .Values.volumes.slurmd) }}
+{{- if $config }}
+{{- range $config }}
+{{- if not .volumeName }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "slurm-cluster.fullname" $ }}-{{ .name }}-pv
+  labels:
+    {{- include "slurm-cluster.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  capacity:
+    storage: {{ .size }}
+  accessModes: {{ .accessModes | toJson }}
+  persistentVolumeReclaimPolicy: {{ .reclaimPolicy | default "Retain" }}
+  storageClassName: {{ .storageClassName }}
+  {{- toYaml .spec | nindent 2 }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

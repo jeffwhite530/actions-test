@@ -1,0 +1,215 @@
+# Default configurations
+defaults:
+  affinity: {}
+  image: docker-registry.your.domain:5000/slurm:24-11-0-1
+  imagePullSecrets: []
+  nodeSelector: {}
+  probes:
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readiness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+  replicas: 1
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  securityContext:
+    runAsUser: 980
+    runAsGroup: 980
+    fsGroup: 980
+  tolerations: []
+
+# The pods that will be launched
+pods:
+  mariadb:
+    image: mariadb:11.6-ubi
+    databaseName: slurm_accounting
+
+  slurmctld:
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+
+  slurmdbd: {}
+
+  slurmd:
+    replicas: 2
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "1000m"
+
+  nodeWatcher:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+volumes:
+  mariadb:
+    # A persistent volume for /var/lib/mysql is required.
+    - name: mariadb-data
+      mountPath: /var/lib/mysql
+      # Optional, defaults to Retain
+      reclaimPolicy: Delete
+      size: 50Gi
+      storageClassName: local-ssd
+      accessModes:
+        - ReadWriteOnce
+      spec:
+        hostPath:
+          path: /apps/slurm-cluster/mariadb/data
+          type: DirectoryOrCreate
+        nodeAffinity:
+          required:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - lavender
+    # List more volumes and they will be mounted into the component's container.
+  munge:
+    # A persistent volume for /etc/munge is required.
+    - name: munge-etc
+      mountPath: /etc/munge
+      # Optional, defaults to Retain
+      reclaimPolicy: Delete
+      size: 1Gi
+      storageClassName: local-ssd
+      accessModes:
+        - ReadWriteMany
+      spec:
+        hostPath:
+          path: /apps/slurm-cluster/munge/etc
+          type: DirectoryOrCreate
+        nodeAffinity:
+          required:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - lavender
+    # List more volumes and they will be mounted into the component's container.
+  nodeWatcher: []
+  slurmctld:
+    # A persistent volume for /var/spool/slurmctld is required.
+    - name: slurmctld-spool
+      mountPath: /var/spool/slurmctld
+      # Optional, defaults to Retain
+      reclaimPolicy: Delete
+      size: 10Gi
+      storageClassName: local-ssd
+      accessModes:
+        - ReadWriteOnce
+      spec:
+        hostPath:
+          path: /apps/slurm-cluster/slurmctld/spool
+          type: DirectoryOrCreate
+        nodeAffinity:
+          required:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - lavender
+    # List more volumes and they will be mounted into the component's container.
+  slurmd: []
+    # slurmd does not require any volumes. The entries below are just examples.
+    # NFS example
+    #- name: home
+    #  mountPath: /home
+    #  # Optional, defaults to Retain
+    #  reclaimPolicy: Delete
+    #  size: 10Gi
+    #  storageClassName: local-ssd
+    #  accessModes: 
+    #    - ReadWriteMany
+    #  spec:
+    #    nfs:
+    #      server: aster.your.domain
+    #      path: /apps/slurm-cluster/slurmd/home
+
+    # HostPath example
+    #- name: data
+    #  mountPath: /data
+    #  # Optional, defaults to Retain
+    #  reclaimPolicy: Delete
+    #  size: 10Gi
+    #  storageClassName: local-ssd
+    #  accessModes:
+    #    - ReadWriteMany
+    #  spec:
+    #    hostPath:
+    #      path: /apps/slurm-cluster/slurmd/data
+    #      type: DirectoryOrCreate
+    #    nodeAffinity:
+    #      required:
+    #        nodeSelectorTerms:
+    #        - matchExpressions:
+    #          - key: kubernetes.io/hostname
+    #            operator: In
+    #            values:
+    #            - lavender
+
+    # Using an existing PV
+    #- name: shared
+    #  mountPath: /shared
+    #  size: 100Gi
+    #  volumeName: shared-pv
+    #  accessModes:
+    #    - ReadWriteMany
+
+    # Creating a new PV
+    #- name: scratch
+    #  mountPath: /scratch
+    #  size: 50Gi
+    #  storageClassName: fast-storage
+    #  accessModes:
+    #    - ReadWriteOnce
+  slurmdbd: []
+
+# Ingress to expose slurmctld
+ingressNginx:
+  enabled: false
+  controller:
+    config:
+      enable-tcp-services: true
+    tcp:
+      configMapNamespace: ingress-nginx
+      configMapName: tcp-services
+
+metrics-server:
+  args:
+    - --kubelet-insecure-tls
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # Annotations to add to the service account
+  annotations: {}
+  # Whether to automount the service account token
+  automount: true
