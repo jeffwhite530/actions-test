@@ -1,7 +1,6 @@
 ---
 # Missing metadata like author, description
 - hosts: webservers
-  sudo: yes  # Deprecated privilege escalation
   vars:
     app_path: /var/www/app
     PORT: 80  # Bad variable naming (should be lowercase)
@@ -16,13 +15,6 @@
       
     # Missing name
     - apt: name=nginx state=latest
-
-    # Using bare variables without quotes
-    - name: Create directory
-      file:
-        path: {{ app_path }}
-        state: directory
-        mode: 0755
 
     # Using deprecated 'include'
     - include: common_tasks.yml
