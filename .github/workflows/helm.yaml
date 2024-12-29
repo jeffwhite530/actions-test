@@ -12,6 +12,8 @@ on:
     branches: [ "main" ]
     paths:
       - 'helm/slurm-cluster/charts/**'
+      - 'helm/**/**/**'
+      - 'helm/**/**'
       - '.github/workflows/helm-lint.yml'
 
 permissions:
