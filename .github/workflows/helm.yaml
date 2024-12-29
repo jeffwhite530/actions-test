@@ -4,16 +4,12 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'helm/slurm-cluster/charts/**'
-      - 'helm/**/**/**'
-      - 'helm/**/**'
+      - 'helm/**'
       - '.github/workflows/helm-lint.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'helm/slurm-cluster/charts/**'
-      - 'helm/**/**/**'
-      - 'helm/**/**'
+      - 'helm/**'
       - '.github/workflows/helm-lint.yml'
 
 permissions:

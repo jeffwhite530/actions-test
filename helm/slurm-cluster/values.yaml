@@ -8,7 +8,7 @@ defaults:
     liveness:
       initialDelaySeconds: 30
       periodSeconds: 10
-      timeoutSeconds: 6
+      timeoutSeconds: 5
     readiness:
       initialDelaySeconds: 30
       periodSeconds: 10
