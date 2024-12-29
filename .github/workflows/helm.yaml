@@ -1,10 +1,16 @@
-name: Run Code Linters
+name: Helm Chart Lint
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'helm/slurm-cluster/charts/**'
+      - '.github/workflows/helm-lint.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'helm/slurm-cluster/charts/**'
+      - '.github/workflows/helm-lint.yml'
 
 permissions:
   contents: read
@@ -13,7 +19,7 @@ permissions:
   checks: write
 
 jobs:
-  run-lint:
+  helm-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +28,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
-      # Helm Chart Testing Setup and Steps
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -48,22 +53,3 @@ jobs:
       - name: Run chart-testing (lint)
         if: steps.list-changed.outputs.changed == 'true'
         run: ct lint --target-branch ${{ github.event.repository.default_branch }}
-
-      # Other Linters
-      - name: Run ShellCheck
-        continue-on-error: true
-        run: find . -type f -name "*.sh" -exec shellcheck {} +
-
-      - name: Run super-linter
-        uses: github/super-linter@v4
-        env:
-          VALIDATE_ALL_CODEBASE: false
-          DEFAULT_BRANCH: "main"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # Enable specific linters
-          VALIDATE_ANSIBLE: true
-          VALIDATE_GITHUB_ACTIONS: true
-          VALIDATE_MARKDOWN: true
-          VALIDATE_PYTHON_PYLINT: true
-          VALIDATE_YAML: true
