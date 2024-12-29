@@ -22,51 +22,29 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Set up Helm
-        id: helm-setup
-        uses: azure/setup-helm@v3
+      # Helm Chart Testing Setup and Steps
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          version: 'latest'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          python-version: '3.x'
+          check-latest: true
 
-      - name: Run Helm lint
-        id: helm-lint
-        continue-on-error: true
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+
+      - name: Run chart-testing (list-changed)
+        id: list-changed
         run: |
-          EXIT_CODE=0
-          if [ -d "./helm" ]; then
-            for chart in ./helm/*/; do
-              if [ -f "$chart/Chart.yaml" ]; then
-                echo "Linting chart: $chart"
-                if ! helm lint "$chart"; then
-                  EXIT_CODE=1
-                fi
-              fi
-            done
-          else
-            echo "No helm directory found"
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-          exit $EXIT_CODE
 
-      - name: Report Helm lint status
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const helmLintOutcome = '${{ steps.helm-lint.outcome }}'
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Helm lint',
-              head_sha: context.sha,
-              status: 'completed',
-              conclusion: helmLintOutcome === 'success' ? 'success' : 'failure',
-              output: {
-                title: 'Helm lint results',
-                summary: helmLintOutcome === 'success' ? 'All Helm charts passed linting' : 'Some Helm charts failed linting'
-              }
-            })
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }}
 
+      # Other Linters
       - name: Run ShellCheck
         run: find . -type f -name "*.sh" -exec shellcheck {} +
 
