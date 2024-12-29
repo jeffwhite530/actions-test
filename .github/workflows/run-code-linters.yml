@@ -10,6 +10,7 @@ permissions:
   contents: read
   packages: read
   statuses: write
+  checks: write
 
 jobs:
   run-lint:
@@ -18,28 +19,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Full git history is needed to get a proper list of changed files
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Helm
+        id: helm-setup
         uses: azure/setup-helm@v3
         with:
           version: 'latest'
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Helm lint
+        id: helm-lint
+        continue-on-error: true
         run: |
+          EXIT_CODE=0
           if [ -d "./helm" ]; then
             for chart in ./helm/*/; do
               if [ -f "$chart/Chart.yaml" ]; then
                 echo "Linting chart: $chart"
-                helm lint "$chart"
+                if ! helm lint "$chart"; then
+                  EXIT_CODE=1
+                fi
               fi
             done
           else
             echo "No helm directory found"
           fi
+          exit $EXIT_CODE
+
+      - name: Report Helm lint status
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const helmLintOutcome = '${{ steps.helm-lint.outcome }}'
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Helm lint',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: helmLintOutcome === 'success' ? 'success' : 'failure',
+              output: {
+                title: 'Helm lint results',
+                summary: helmLintOutcome === 'success' ? 'All Helm charts passed linting' : 'Some Helm charts failed linting'
+              }
+            })
+
+      - name: Run Spellcheck
+        uses: igsekor/pyspelling-any@v0.0.2
 
       - name: Run super-linter
         uses: github/super-linter@v4
