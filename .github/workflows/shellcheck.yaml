@@ -4,16 +4,19 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - '**/*.sh'
+      - 'scripts/**'
       - '.github/workflows/shellcheck.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - '**/*.sh'
+      - 'scripts/**'
       - '.github/workflows/shellcheck.yml'
 
 permissions:
   contents: read
+  packages: read
+  statuses: write
+  checks: write
 
 jobs:
   shellcheck:
