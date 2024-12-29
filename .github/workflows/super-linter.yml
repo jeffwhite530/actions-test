@@ -11,10 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           # Full git history is needed to get a proper list of changed files
           fetch-depth: 0
+          # Add this to ensure proper git configuration
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Lint Code Base
         uses: github/super-linter@v4
