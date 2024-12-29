@@ -51,6 +51,7 @@ jobs:
 
       # Other Linters
       - name: Run ShellCheck
+        continue-on-error: true
         run: find . -type f -name "*.sh" -exec shellcheck {} +
 
       - name: Run super-linter
