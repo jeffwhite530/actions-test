@@ -5,12 +5,12 @@ on:
     branches: [ "main" ]
     paths:
       - 'scripts/**'
-      - '.github/workflows/shellcheck.yml'
+      - '.github/workflows/shellcheck.yaml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'scripts/**'
-      - '.github/workflows/shellcheck.yml'
+      - '.github/workflows/shellcheck.yaml'
 
 permissions:
   contents: read

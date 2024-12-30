@@ -5,12 +5,12 @@ on:
     branches: [ "main" ]
     paths:
       - 'helm/**'
-      - '.github/workflows/helm-lint.yml'
+      - '.github/workflows/helm-lint.yaml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'helm/**'
-      - '.github/workflows/helm-lint.yml'
+      - '.github/workflows/helm-lint.yaml'
 
 permissions:
   contents: read

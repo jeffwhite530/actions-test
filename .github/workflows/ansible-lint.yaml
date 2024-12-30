@@ -5,10 +5,12 @@ on:
     branches: [ "main" ]
     paths:
       - 'ansible/**'
+      - '.github/workflows/ansible-lint.yaml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'ansible/**'
+      - '.github/workflows/ansible-lint.yaml'
 
 permissions:
   contents: read
