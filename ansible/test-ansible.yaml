@@ -3,7 +3,6 @@
 - name: Web Application Setup
   hosts: webservers
   become: true
-  author: Your Name
   description: Sets up the web application environment and directories
   
   vars:
