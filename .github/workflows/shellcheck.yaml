@@ -29,10 +29,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run ShellCheck
+        continue-on-error: true
         run: |
           pwd
+          any_check_failed=0
           find ${{ env.SCRIPTS_DIR }} -type f -name "*.sh" -exec sh -c '
             echo "\nChecking: $1"
-            shellcheck "$1"
+            if ! shellcheck "$1"; then
+              any_check_failed=1
+            fi
           ' sh {} \;
           echo "ShellCheck run complete"
+          exit $any_check_failed
