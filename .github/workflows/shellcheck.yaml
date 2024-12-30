@@ -36,6 +36,7 @@ jobs:
           find ${{ env.SCRIPTS_DIR }} -type f -name "*.sh" -exec sh -c '
             echo "\nChecking: $1"
             if ! shellcheck "$1"; then
+              echo "Detected non-zero exit for shellcheck for for ${1}. Setting shellcheck runner to failed."
               any_check_failed=1
             fi
           ' sh {} \;
