@@ -27,8 +27,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
           # Enable specific linters
-          VALIDATE_ANSIBLE: true
-          #VALIDATE_GITHUB_ACTIONS: true
+          #VALIDATE_ANSIBLE: true
+          VALIDATE_GITHUB_ACTIONS: true
           #VALIDATE_MARKDOWN: true
           #VALIDATE_PYTHON_PYLINT: true
           #VALIDATE_YAML: true
