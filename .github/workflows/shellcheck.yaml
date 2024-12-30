@@ -33,12 +33,12 @@ jobs:
         run: |
           pwd
           any_check_failed=0
-          find ${{ env.SCRIPTS_DIR }} -type f -name "*.sh" -exec sh -c '
-            echo "\nChecking: $1"
-            if ! shellcheck "$1"; then
-              echo "Detected non-zero exit for shellcheck for for ${1}. Setting shellcheck runner to failed."
+          while IFS= read -r script; do
+            echo "\nChecking: $script"
+            if ! shellcheck "$script"; then
+              echo "Detected non-zero exit for shellcheck for $script. Setting shellcheck runner to failed."
               any_check_failed=1
             fi
-          ' sh {} \;
+          done < <(find ${{ env.SCRIPTS_DIR }} -type f -name "*.sh")
           echo "ShellCheck run complete"
           exit $any_check_failed
