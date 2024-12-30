@@ -2,7 +2,7 @@
 # Ansible playbook to set up web application environment
 - name: Web Application Setup
   hosts: webservers
-  become: true
+  become: no
 
   vars:
     app_path: /var/www/app
