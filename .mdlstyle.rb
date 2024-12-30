@@ -1,5 +1,7 @@
 all
 
+exclude_rule 'MD001'
+
 # Multiple consecutive blank lines
 exclude_rule 'MD012'
 
