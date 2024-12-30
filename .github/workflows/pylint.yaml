@@ -38,7 +38,9 @@ jobs:
           any_check_failed=0
           while IFS= read -r script; do
             echo "Checking: $script"
-            if ! pylint "$script"; then
+            if pylint "$script"; then
+              echo "Check passed."
+            else
               echo "Detected non-zero exit for pylint for $script. Setting pylint runner to failed."
               any_check_failed=1
             fi
