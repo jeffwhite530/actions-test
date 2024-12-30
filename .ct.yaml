@@ -1,4 +1,4 @@
 chart-dirs:
-  - helm/slurm-cluster
+  - helm/
 valueFiles:
   - helm/secrets.yaml
