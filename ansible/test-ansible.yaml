@@ -3,13 +3,13 @@
 - name: Web Application Setup
   hosts: webservers
   become: true
-  
+
   vars:
     app_path: /var/www/app
 
   tasks:
     - name: Create log directory
-      file:
+      ansible.builtin.file:
         path: /var/log/app
         state: directory
         mode: "0755"
