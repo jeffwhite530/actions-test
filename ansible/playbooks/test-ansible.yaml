@@ -17,7 +17,7 @@
     - apt: name=nginx state=latest
 
     # Using deprecated 'include'
-    - include: common_tasks.yml
+    #- include: common_tasks.yml
 
     # Bad git usage - using command instead of git module
     - name: Clone repository
