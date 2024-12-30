@@ -29,12 +29,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run ShellCheck
-        continue-on-error: true
         run: |
           pwd
           any_check_failed=0
           while IFS= read -r script; do
-            echo "\nChecking: $script"
+            echo "Checking: $script"
             if ! shellcheck "$script"; then
               echo "Detected non-zero exit for shellcheck for $script. Setting shellcheck runner to failed."
               any_check_failed=1
