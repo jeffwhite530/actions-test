@@ -3,7 +3,6 @@
 - name: Web Application Setup
   hosts: webservers
   become: true
-  description: Sets up the web application environment and directories
   
   vars:
     app_path: /var/www/app

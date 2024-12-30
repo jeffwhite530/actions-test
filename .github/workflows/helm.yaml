@@ -22,7 +22,8 @@ jobs:
   helm-lint:
     runs-on: ubuntu-latest
     env:
-      CHART_PATH: helm/slurm-cluster
+      CHART_DIRS: helm
+      CHARTS: helm/slurm-cluster
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,11 +48,11 @@ jobs:
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
-          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }} --chart-dirs ${{ env.CHART_PATH }})
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }} --chart-dirs ${{ env.CHART_DIRS }} --charts ${{ env.CHARTS }})
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run chart-testing (lint)
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct lint --target-branch ${{ github.event.repository.default_branch }} --chart-dirs ${{ env.CHART_PATH }}
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }} --chart-dirs ${{ env.CHART_DIRS }} --charts ${{ env.CHARTS }}
