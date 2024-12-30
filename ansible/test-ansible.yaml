@@ -1,14 +1,19 @@
 ---
-# Missing metadata like author, description
-- hosts: webservers
+# Ansible playbook to set up web application environment
+- name: Web Application Setup
+  hosts: webservers
+  become: true
+  author: Your Name
+  description: Sets up the web application environment and directories
+  
   vars:
     app_path: /var/www/app
 
-    # Unsafe file permissions
+  tasks:
     - name: Create log directory
       file:
         path: /var/log/app
         state: directory
-        mode: 640
-
-
+        mode: "0755"
+        owner: www-data
+        group: www-data
