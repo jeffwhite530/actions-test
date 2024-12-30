@@ -44,3 +44,14 @@ jobs:
 
       - name: Run chart-testing (lint)
         run: ct lint --config helm/ct.yaml --all
+
+      - name: Run helm template and kube-linter
+        run: |
+          mkdir -p helm-yamls
+          helm template helm/slurm-cluster > helm-yamls/templates.yaml
+      
+      - name: Scan Helm templates with kube-linter
+        id: kube-lint-scan  
+        uses: stackrox/kube-linter-action@v1
+        with:
+          directory: helm-yamls
