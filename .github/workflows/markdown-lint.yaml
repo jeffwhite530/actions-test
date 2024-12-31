@@ -6,11 +6,15 @@ on:
     paths:
       - '**/*.md'
       - '.github/workflows/markdown-lint.yaml'
+      - '.mdlrc'
+      - '.mdl_styl.rb'
   pull_request:
     branches: [ "main" ]
     paths:
       - '**/*.md'
       - '.github/workflows/markdown-lint.yaml'
+      - '.mdlrc'
+      - '.mdl_styl.rb'
 
 permissions:
   contents: read

@@ -6,11 +6,13 @@ on:
     paths:
       - '**/*.py'
       - '.github/workflows/pylint.yaml'
+      - '.pylintrc'
   pull_request:
     branches: [ "main" ]
     paths:
       - '**/*.py'
       - '.github/workflows/pylint.yaml'
+      - '.pylintrc'
 
 permissions:
   contents: read
