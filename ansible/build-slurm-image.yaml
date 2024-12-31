@@ -4,7 +4,7 @@
   become: false
   vars:
     # Set the variable below or run with: ansible-playbook --extra-vars "slurm_source_url=x" file.yaml
-    #slurm_source_url: "https://github.com/SchedMD/slurm/archive/refs/tags/slurm-24-11-0-1.tar.gz"
+    # slurm_source_url: "https://github.com/SchedMD/slurm/archive/refs/tags/slurm-24-11-0-1.tar.gz"
 
   tasks:
     - name: Create slurm group
@@ -64,14 +64,17 @@
         state: directory
         mode: '0755'
 
+    # noqa: command-instead-of-module
     - name: Extract Slurm source tarball to a specific folder structure
       ansible.builtin.command: "tar -xaf /tmp/slurm.tar.gz -C /tmp/slurm-source --strip-components=1"
+      changed_when: true
 
     - name: Build Slurm dependencies
       ansible.builtin.shell: |
         mk-build-deps -i -t "apt-get -y --no-install-recommends" debian/control
       args:
         chdir: /tmp/slurm-source
+      changed_when: true
 
     - name: Build Slurm
       ansible.builtin.shell: |
@@ -133,8 +136,8 @@
 
     - name: Clean up APT cache
       ansible.builtin.apt:
-        autoclean: yes
-        clean: yes
+        autoclean: true
+        clean: true
 
     - name: Remove /tmp directory contents
       ansible.builtin.file:
