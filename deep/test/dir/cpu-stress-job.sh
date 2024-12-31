@@ -11,8 +11,8 @@
 
 echo "Starting CPU stress test at $(date)"
 echo "Running on hostname: $(hostname)"
-echo "Job ID: $SLURM_JOB_ID"
-echo "Number of CPUs allocated: $SLURM_CPUS_ON_NODE"
+echo "Job ID: ${SLURM_JOB_ID}"
+echo "Number of CPUs allocated: ${SLURM_CPUS_ON_NODE}"
 
 # Load any necessary modules (uncomment if needed)
 # module load stress-ng
@@ -24,7 +24,7 @@ cd /tmp || exit 1
 # --cpu-method matrixprod : Use matrix product method (heavy on CPU)
 # --metrics : Show performance metrics
 # --timeout x : Run for x
-stress-ng --cpu $SLURM_CPUS_ON_NODE \
+stress-ng --cpu "${SLURM_CPUS_ON_NODE}" \
          --cpu-method matrixprod \
          --metrics \
          --timeout 10m \

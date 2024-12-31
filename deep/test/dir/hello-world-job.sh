@@ -9,9 +9,9 @@
 echo "Starting job at $(date)"
 
 echo "Running on hostname: $(hostname)"
-echo "Job ID: $SLURM_JOB_ID"
-echo "Job name: $SLURM_JOB_NAME"
-echo "Allocated nodes: $SLURM_JOB_NODELIST"
-echo "Number of CPUs allocated: $SLURM_CPUS_ON_NODE"
+echo "Job ID: ${SLURM_JOB_ID}"
+echo "Job name: ${SLURM_JOB_NAME}"
+echo "Allocated nodes: ${SLURM_JOB_NODELIST}"
+echo "Number of CPUs allocated: ${SLURM_CPUS_ON_NODE}"
 
 echo "Job completed at $(date)"

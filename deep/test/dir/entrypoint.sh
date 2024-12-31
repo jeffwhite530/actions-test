@@ -18,7 +18,7 @@ get_cpu_quota() {
 
   # Try to read CPU quota and period from cgroups v2 first
   if [ -f /sys/fs/cgroup/cpu.max ]; then
-    read cpu_quota cpu_period < /sys/fs/cgroup/cpu.max
+    read -r cpu_quota cpu_period < /sys/fs/cgroup/cpu.max
   # Fall back to cgroups v1
   elif [ -f /sys/fs/cgroup/cpu/cpu.cfs_quota_us ] && [ -f /sys/fs/cgroup/cpu/cpu.cfs_period_us ]; then
     cpu_quota=$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)
@@ -29,7 +29,7 @@ get_cpu_quota() {
   fi
 
   # If quota is -1 (unlimited), use the host's CPU count
-  if [ "$cpu_quota" = "-1" ] || [ "$cpu_quota" = "max" ]; then
+  if [ "${cpu_quota}" = "-1" ] || [ "${cpu_quota}" = "max" ]; then
     nproc
     return
   fi
@@ -200,11 +200,11 @@ IgnoreSystemd=yes
 CgroupPlugin=disabled
 EOF
 
-  echo "$memory"
+  echo "${memory}"
 
   log "Starting slurmd daemon"
   exec /usr/sbin/slurmd -D -Z \
-       --conf "CPUs=$cpu_count RealMemory=$memory"
+       --conf "CPUs=${cpu_count} RealMemory=${memory}"
 }
 
 
