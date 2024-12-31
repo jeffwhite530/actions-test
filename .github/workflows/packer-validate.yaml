@@ -1,0 +1,48 @@
+name: Packer Validate
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'packer/**'
+      - '.github/workflows/packer-validate.yaml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'packer/**'
+      - '.github/workflows/packer-validate.yaml'
+
+permissions:
+  contents: read
+  packages: read
+  statuses: write
+  checks: write
+
+jobs:
+  packer-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: "latest"
+
+      - name: Run Packer Validate
+        working-directory: packer/
+        run: |
+          any_validate_failed=0
+          while IFS= read -r template; do
+            packer init "$template"
+            echo "Validating: $template"
+            if packer validate "$template"; then
+              echo "Validation passed."
+            else
+              echo "Detected validation failure for $template. Setting validation check to failed."
+              any_validate_failed=1
+            fi
+          done < <(find . -type f -name "*.pkr.hcl")
+          echo "Packer validation complete"
+          exit $any_validate_failed

@@ -20,9 +20,6 @@ permissions:
   statuses: write
   checks: write
 
-env:
-  SCRIPTS_DIR: "scripts/"
-
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
@@ -32,7 +29,6 @@ jobs:
 
       - name: Run ShellCheck
         run: |
-          pwd
           any_check_failed=0
           while IFS= read -r script; do
             echo "Checking: $script"
@@ -42,6 +38,6 @@ jobs:
               echo "Detected non-zero exit for shellcheck for $script. Setting shellcheck runner to failed."
               any_check_failed=1
             fi
-          done < <(find ${{ env.SCRIPTS_DIR }} -type f -name "*.sh")
+          done < <(find . -type f -name "*.sh")
           echo "ShellCheck run complete"
           exit $any_check_failed

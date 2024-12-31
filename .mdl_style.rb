@@ -6,6 +6,9 @@ all
 # Multiple consecutive blank lines
 exclude_rule 'MD012'
 
+# Line length
+exclude_rule 'MD013'
+
 # Bare URL use
 exclude_rule 'MD034'
 
