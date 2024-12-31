@@ -50,6 +50,7 @@ jobs:
 
       - name: Run helm template
         run: |
+          mkdir -p helm-yamls
           if [ -d "${{ env.HELM_CHART_DIR }}" ]; then
             mkdir -p helm-yamls
             helm template -f helm/secrets.yaml ${{ env.HELM_CHART_DIR }} > helm-yamls/templates.yaml
