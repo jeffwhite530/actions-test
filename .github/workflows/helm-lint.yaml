@@ -43,14 +43,13 @@ jobs:
         uses: helm/chart-testing-action@v2.6.1
 
       - name: Run chart-testing (lint)
-        continue-on-error: true
         run: ct lint --config helm/ct.yaml --all
 
       - name: Run helm template
         run: |
           mkdir -p helm-yamls
           helm template -f helm/secrets.yaml helm/slurm-cluster > helm-yamls/templates.yaml
-      
+
       - name: Scan Helm templates with kube-linter
         id: kube-lint-scan  
         uses: stackrox/kube-linter-action@v1

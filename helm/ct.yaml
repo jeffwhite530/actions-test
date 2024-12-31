@@ -5,4 +5,3 @@ valueFiles:
 validateYaml: true
 validateMaintainers: false
 checkVersionIncrement: false
-helm-extra-args: --debug
