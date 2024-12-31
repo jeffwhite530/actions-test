@@ -1,4 +1,6 @@
-<!-- markdownlint-disable MD012 MD022 MD031 MD032 MD034 MD041 -->
+<!-- markdownlint-disable MD012 MD013 MD034 -->
+
+# Slurm in Kubernetes
 
 This project provides a containerized Slurm cluster solution running on Kubernetes.
 
@@ -21,6 +23,7 @@ This repository includes:
 ## Prerequisites
 
 Ensure these tools are installed on your system:
+
 - Ansible
 - Docker
 - HashiCorp Packer
@@ -84,6 +87,7 @@ Ensure these tools are installed on your system:
    ```
 
    You should see something like this:
+
    ```plaintext
    NAME: slurm-cluster
    LAST DEPLOYED: Sat Dec 28 15:51:42 2024
