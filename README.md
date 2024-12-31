@@ -1,6 +1,6 @@
-<!-- markdownlint-disable MD012 MD013 MD034 -->
-
 # Slurm in Kubernetes
+
+<!-- markdownlint-disable MD012 MD013 MD034 -->
 
 This project provides a containerized Slurm cluster solution running on Kubernetes.
 
@@ -396,9 +396,9 @@ This shows how to launch test jobs into Slurm after the cluster has deployed.
 
       ```plaintext
       Defaulted container "slurmctld" out of: slurmctld, copy-slurmdbd-conf (init), copy-slurm-conf (init)
-      JobID           JobName      State                  NodeList               StdOut               StdErr 
-      ------------ ---------- ---------- ------------------------- -------------------- -------------------- 
-      1             hello-wo+  COMPLETED slurm-cluster-slurmd-77f+      /tmp/job-%j.out      /tmp/job-%j.err 
+      JobID           JobName      State                  NodeList               StdOut               StdErr
+      ------------ ---------- ---------- ------------------------- -------------------- --------------------
+      1             hello-wo+  COMPLETED slurm-cluster-slurmd-77f+      /tmp/job-%j.out      /tmp/job-%j.err
       1.batch           batch  COMPLETED slurm-cluster-slurmd-77f+
       ```
 
