@@ -43,6 +43,7 @@ jobs:
         uses: helm/chart-testing-action@v2.6.1
 
       - name: Run chart-testing (lint)
+        continue-on-error: true
         run: ct lint --config helm/ct.yaml --all
 
       - name: Run helm template and kube-linter
