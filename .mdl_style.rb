@@ -1,6 +1,7 @@
-all
+# Custom Markdown style rules
+# Configures specific linting checks and preferences for mdl
 
-exclude_rule 'MD001'
+all
 
 # Multiple consecutive blank lines
 exclude_rule 'MD012'

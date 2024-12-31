@@ -1,1 +1,4 @@
+# Shell script linting configuration
+# Controls ShellCheck's behavior and warning suppressions
+
 enable=require-variable-braces

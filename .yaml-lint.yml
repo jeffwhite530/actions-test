@@ -1,3 +1,7 @@
+# YAML linting configuration
+# Controls syntax and style rules for YAML files 
+# Used by yaml-lint to enforce consistent formatting
+
 extends: default
 
 ignore:

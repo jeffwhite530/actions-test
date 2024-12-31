@@ -1,3 +1,6 @@
+# Helm chart testing configuration
+# Controls chart-testing behavior and validation rules
+
 chart-dirs:
   - helm/
 valueFiles:

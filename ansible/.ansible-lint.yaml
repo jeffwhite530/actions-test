@@ -1,2 +1,5 @@
+# Ansible playbook linting configuration
+# Controls ansible-lint behavior and rule settings
+
 skip_list:
   - yaml[new-line-at-end-of-file]
