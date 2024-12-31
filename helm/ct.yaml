@@ -1,0 +1,7 @@
+chart-dirs:
+  - helm/
+valueFiles:
+  - helm/secrets.yaml
+validateYaml: true
+validateMaintainers: false
+checkVersionIncrement: false

@@ -1,0 +1,33 @@
+name: Ansible Lint
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yaml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yaml'
+
+permissions:
+  contents: read
+  packages: read
+  statuses: write
+  checks: write
+
+jobs:
+  ansible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint@main
+        # optional (see below):
+        with:
+          args: ""
+          setup_python: "true"
+          working_directory: "ansible/"
+          requirements_file: ""

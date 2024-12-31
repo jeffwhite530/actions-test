@@ -1,0 +1,65 @@
+name: Helm Chart Lint
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-lint.yaml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-lint.yaml'
+
+permissions:
+  contents: read
+  packages: read
+  statuses: write
+  checks: write
+
+env:
+ HELM_CHART_DIR: helm/slurm-cluster
+
+jobs:
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          check-latest: true
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.14.4
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.6.1
+
+      - name: Run chart-testing (lint)
+        run: ct lint --config helm/ct.yaml --all
+
+      - name: Run helm template
+        run: |
+          mkdir -p helm-yamls
+          if [ -d "${{ env.HELM_CHART_DIR }}" ]; then
+            mkdir -p helm-yamls
+            helm template -f helm/secrets.yaml ${{ env.HELM_CHART_DIR }} > helm-yamls/templates.yaml
+          else
+            echo "Directory ${{ env.HELM_CHART_DIR }} does not exist, skipping helm template"
+            exit 0
+          fi
+      - name: Scan Helm templates with kube-linter
+        id: kube-lint-scan  
+        uses: stackrox/kube-linter-action@v1
+        with:
+          directory: helm-yamls
