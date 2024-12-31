@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+"""
+Kubernetes to Slurm node synchronization controller. Maintains alignment between
+Kubernetes pods and the Slurm controller by watching pod events and automatically 
+adding/removing nodes to Slurm.
+"""
+
 # pylint: disable=bad-indentation, line-too-long, logging-fstring-interpolation
 
 import subprocess
-import time
 import os
 import logging
 import sys
