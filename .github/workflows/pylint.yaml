@@ -46,6 +46,6 @@ jobs:
               echo "Detected non-zero exit for pylint for $script. Setting pylint runner to failed."
               any_check_failed=1
             fi
-          done < <(find scripts/ -type f -name "*.py")
+          done < <(find . -type f -name "*.py")
           echo "PyLint run complete"
           exit $any_check_failed
