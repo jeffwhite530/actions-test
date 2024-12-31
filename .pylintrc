@@ -1,2 +1,5 @@
+# Python code linting configuration 
+# Controls Pylint's behavior, warnings and code style checks
+
 [MASTER]
 disable=import-error
