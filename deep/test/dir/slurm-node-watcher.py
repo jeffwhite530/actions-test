@@ -6,8 +6,6 @@ Kubernetes pods and the Slurm controller by watching pod events and automaticall
 adding/removing nodes to Slurm.
 """
 
-# pylint: disable=bad-indentation, line-too-long, logging-fstring-interpolation
-
 import subprocess
 import os
 import logging
