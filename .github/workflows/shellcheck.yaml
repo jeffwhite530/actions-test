@@ -29,7 +29,6 @@ jobs:
 
       - name: Run ShellCheck
         run: |
-          pwd
           any_check_failed=0
           while IFS= read -r script; do
             echo "Checking: $script"
