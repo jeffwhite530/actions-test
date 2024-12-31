@@ -64,9 +64,8 @@
         state: directory
         mode: '0755'
 
-    # noqa: command-instead-of-module
     - name: Extract Slurm source tarball to a specific folder structure
-      ansible.builtin.command: "tar -xaf /tmp/slurm.tar.gz -C /tmp/slurm-source --strip-components=1"
+      ansible.builtin.command: "tar -xaf /tmp/slurm.tar.gz -C /tmp/slurm-source --strip-components=1" # noqa: command-instead-of-module
       changed_when: true
 
     - name: Build Slurm dependencies
@@ -81,6 +80,7 @@
         debuild -b -uc -us -j$(nproc)
       args:
         chdir: /tmp/slurm-source
+      changed_when: true
 
     - name: Define required Slurm .deb files
       ansible.builtin.set_fact:
