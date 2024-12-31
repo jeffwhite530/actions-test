@@ -3,3 +3,6 @@
 
 [MASTER]
 disable=import-error
+
+[MESSAGES CONTROL]
+module-naming-style=any

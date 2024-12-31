@@ -91,7 +91,7 @@ def add_slurm_node(pod_name: str) -> None:
   Args:
     pod_name: Name of the pod to add as a Slurm node
   """
-  exists, properties = check_node_exists(pod_name)
+  exists, _ = check_node_exists(pod_name)
   if exists:
     # Node already exists, let slurmd handle its registration
     logging.info(f"Node {pod_name} already exists in Slurm")
@@ -153,7 +153,7 @@ def is_pod_ready(pod: kubernetes.client.V1Pod) -> bool:
   return False
 
 
-def sync_slurm_nodes(core_api: kubernetes.client.CoreV1Api, namespace: str, 
+def sync_slurm_nodes(core_api: kubernetes.client.CoreV1Api, namespace: str,
                      label_selector: str) -> None:
   """Perform initial sync between Kubernetes pods and Slurm nodes.
   
@@ -170,8 +170,8 @@ def sync_slurm_nodes(core_api: kubernetes.client.CoreV1Api, namespace: str,
 
   # Add missing nodes
   for pod_name, pod in current_pods.items():
-    if ((pod_name not in slurm_nodes or 
-         slurm_nodes[pod_name].get('state') == 'DOWN') and 
+    if ((pod_name not in slurm_nodes or
+         slurm_nodes[pod_name].get('state') == 'DOWN') and
         is_pod_ready(pod)):
       add_slurm_node(pod_name)
 
@@ -196,54 +196,49 @@ def watch_pod_events(core_api: kubernetes.client.CoreV1Api, namespace: str,
   watcher = kubernetes.watch.Watch()
 
   while True:
-    try:
-      for event in watcher.stream(
-        core_api.list_namespaced_pod,
-        namespace,
-        label_selector=label_selector
-      ):
-        pod = event['object']
-        pod_name = pod.metadata.name
+    for event in watcher.stream(
+      core_api.list_namespaced_pod,
+      namespace,
+      label_selector=label_selector
+    ):
+      pod = event['object']
+      pod_name = pod.metadata.name
 
-        # Log detailed pod state for all events
-        logging.info(f"Event {event['type']} for pod {pod_name}:")
-        logging.info(f"  Phase: {pod.status.phase}")
-        if pod.status.conditions:
-          for condition in pod.status.conditions:
-            logging.info(f"  Condition {condition.type}: {condition.status} ({condition.message if hasattr(condition, 'message') else 'no message'})")
-        else:
-          logging.info("  No conditions")
+      # Log detailed pod state for all events
+      logging.info(f"Event {event['type']} for pod {pod_name}:")
+      logging.info(f"  Phase: {pod.status.phase}")
+      if pod.status.conditions:
+        for condition in pod.status.conditions:
+          logging.info(f"  Condition {condition.type}: {condition.status} ({condition.message if hasattr(condition, 'message') else 'no message'})")
+      else:
+        logging.info("  No conditions")
 
-        if event['type'] == 'DELETED':
-          remove_slurm_node(pod_name)
-          continue
+      if event['type'] == 'DELETED':
+        remove_slurm_node(pod_name)
+        continue
 
-        # Skip if pod isn't ready for non-delete events
-        if not is_pod_ready(pod):
-          logging.info(f"Skipping {event['type']} event for pod {pod_name} - not ready")
-          continue
+      # Skip if pod isn't ready for non-delete events
+      if not is_pod_ready(pod):
+        logging.info(f"Skipping {event['type']} event for pod {pod_name} - not ready")
+        continue
 
-        if event['type'] == 'ADDED':
+      if event['type'] == 'ADDED':
+        add_slurm_node(pod_name)
+        continue
+
+      if event['type'] == 'MODIFIED':
+        exists, properties = check_node_exists(pod_name)
+        if not exists:
+          # If node doesn't exist and pod is ready, add it (just like ADDED)
           add_slurm_node(pod_name)
           continue
 
-        if event['type'] == 'MODIFIED':
-          exists, properties = check_node_exists(pod_name)
-          if not exists:
-            # If node doesn't exist and pod is ready, add it (just like ADDED)
-            add_slurm_node(pod_name)
-            continue
-
-          # If node exists but is down, try re-adding it
-          state = properties.get('state', '').upper()
-          if 'DOWN' in state:
-            logging.info(f"Node {pod_name} found in {state} state, attempting to re-add")
-            remove_slurm_node(pod_name)
-            add_slurm_node(pod_name)
-
-    except Exception as error:
-      logging.error(f"Error in watch loop: {error}")
-      time.sleep(5)  # Wait before retrying
+        # If node exists but is down, try re-adding it
+        state = properties.get('state', '').upper()
+        if 'DOWN' in state:
+          logging.info(f"Node {pod_name} found in {state} state, attempting to re-add")
+          remove_slurm_node(pod_name)
+          add_slurm_node(pod_name)
 
 
 def main() -> None:
