@@ -1,11 +1,6 @@
 name: Packer Validate
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'packer/**'
-      - '.github/workflows/packer-validate.yaml'
   pull_request:
     branches: [ "main" ]
     paths:

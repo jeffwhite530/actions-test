@@ -1,12 +1,6 @@
 name: PyLint
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - '**/*.py'
-      - '.github/workflows/pylint.yaml'
-      - '.pylintrc'
   pull_request:
     branches: [ "main" ]
     paths:
