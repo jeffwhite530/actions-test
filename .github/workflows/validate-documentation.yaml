@@ -1,22 +1,21 @@
-name: Deploy Documentation
+name: Validate Documentation
 
 on:
   pull_request:
-    types: [closed]
     branches: [ "main" ]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-      - '.github/workflows/deploy-documentation.yaml'
+      - '.github/workflows/validate-documentation.yaml'
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
+  packages: read
+  statuses: write
+  checks: write
 
 jobs:
-  docs:
-    if: github.event.pull_request.merged == true
+  validate-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,5 +25,6 @@ jobs:
           python-version: '3.x'
       - name: Install dependencies
         run: pipx install --include-deps mkdocs-material
-      - name: Build and deploy documentation
-        run: mkdocs gh-deploy --force
+      - name: Validate documentation build
+        run: |
+          mkdocs build --strict
