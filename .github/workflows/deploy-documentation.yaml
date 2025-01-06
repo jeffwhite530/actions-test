@@ -25,6 +25,6 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install dependencies
-        run: pipx install mkdocs-material
+        run: pipx install --include-deps mkdocs-material
       - name: Build and deploy documentation
         run: mkdocs gh-deploy --force

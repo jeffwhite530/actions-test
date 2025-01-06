@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install dependencies
-        run: pipx install mkdocs-material
+        run: pipx install --include-deps mkdocs-material
       - name: Validate documentation build
         run: |
           mkdocs build --strict
