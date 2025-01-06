@@ -1,4 +1,4 @@
-site_name: Slurm in Kubernetes
+site_name: Test
 theme: readthedocs
 
 markdown_extensions:
@@ -9,3 +9,6 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+
+nav:
+  - About: index.md
