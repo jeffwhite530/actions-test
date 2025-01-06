@@ -11,4 +11,4 @@ markdown_extensions:
   - pymdownx.superfences
 
 nav:
-  - About: about.md
+  - About: index.md
