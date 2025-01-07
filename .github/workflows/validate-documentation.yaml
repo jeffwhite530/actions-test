@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'mkdocs.yaml'
       - '.github/workflows/validate-documentation.yaml'
 
 permissions:
