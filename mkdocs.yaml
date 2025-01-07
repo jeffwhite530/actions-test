@@ -1,4 +1,6 @@
 site_name: Test
+repo_url: https://jeffwhite530.github.io/actions-test
+site_url: https://github.com/jeffwhite530/actions-test
 theme: readthedocs
 
 markdown_extensions:
@@ -9,9 +11,6 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-
-repo_url: https://jeffwhite530.github.io/actions-test/
-site_url: https://github.com/jeffwhite530/actions-test
 
 nav:
   - About: index.md
