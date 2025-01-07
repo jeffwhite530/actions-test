@@ -6,7 +6,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'mkdocs.yaml'
       - '.github/workflows/deploy-documentation.yaml'
 
 permissions:
